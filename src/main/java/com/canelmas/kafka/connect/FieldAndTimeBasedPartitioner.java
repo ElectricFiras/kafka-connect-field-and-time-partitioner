@@ -74,7 +74,7 @@ public final class FieldAndTimeBasedPartitioner<T> extends TimeBasedPartitioner<
         final String partitionsForFields = this.partitionFieldExtractor.extract(sinkRecord);
         final String partition = String.join(this.delim, partitionsForFields, partitionsForTimestamp);
 
-        log.info("Partition Debug 3: {}", encodedPartition);
+        log.info("Partition Debug 3: {}", partition);
 
         return partition.replace("topics/", "");
     }
