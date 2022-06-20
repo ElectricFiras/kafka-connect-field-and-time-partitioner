@@ -59,7 +59,7 @@ public final class FieldAndTimeBasedPartitioner<T> extends TimeBasedPartitioner<
 
         log.info("Encoded partition : {}", partition);
 
-        return partition;
+        return partition.replace("topics/", "");
     }
 
     @Override
@@ -75,7 +75,7 @@ public final class FieldAndTimeBasedPartitioner<T> extends TimeBasedPartitioner<
 
         log.info("Encoded partition : {}", partition);
 
-        return partition;
+        return partition.replace("topics/", "");
     }
 
     public static class PartitionFieldExtractor {
@@ -119,7 +119,7 @@ public final class FieldAndTimeBasedPartitioner<T> extends TimeBasedPartitioner<
 
             }
 
-            return builder.toString();
+            return builder.toString().replace("topics/", "");
 
         }
     }
