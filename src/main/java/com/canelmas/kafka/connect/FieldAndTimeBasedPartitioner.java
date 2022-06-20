@@ -65,7 +65,7 @@ public final class FieldAndTimeBasedPartitioner<T> extends TimeBasedPartitioner<
     @Override
     public String generatePartitionedPath(String topic, String encodedPartition) {
       // we don't want to use topic name so we ignore it
-      return encodedPartition;
+      return encodedPartition.replace("topics/", "");
     }
 
     public String encodePartition(final SinkRecord sinkRecord) {
