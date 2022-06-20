@@ -59,14 +59,14 @@ public final class FieldAndTimeBasedPartitioner<T> extends TimeBasedPartitioner<
 
         log.info("Partition Debug 1 : {}", partition);
 
-        return partition.replace("topics/", "");
+        return partition;
     }
 
     @Override
     public String generatePartitionedPath(String topic, String encodedPartition) {
       // we don't want to use topic name so we ignore it
       log.info("Partition Debug 2: {}", encodedPartition);
-      return encodedPartition.replace("topics/", "");
+      return encodedPartition;
     }
 
     public String encodePartition(final SinkRecord sinkRecord) {
@@ -76,7 +76,7 @@ public final class FieldAndTimeBasedPartitioner<T> extends TimeBasedPartitioner<
 
         log.info("Partition Debug 3: {}", partition);
 
-        return partition.replace("topics/", "");
+        return partition;
     }
 
     public static class PartitionFieldExtractor {
@@ -121,7 +121,7 @@ public final class FieldAndTimeBasedPartitioner<T> extends TimeBasedPartitioner<
             }
 
             log.info("Partition Debug 4: {}", builder.toString());
-            return builder.toString().replace("topics/", "");
+            return builder.toString();
 
         }
     }
