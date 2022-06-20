@@ -62,6 +62,12 @@ public final class FieldAndTimeBasedPartitioner<T> extends TimeBasedPartitioner<
         return partition;
     }
 
+    @Override
+    public String generatePartitionedPath(String topic, String encodedPartition) {
+      // we don't want to use topic name so we ignore it
+      return encodedPartition;
+    }
+
     public String encodePartition(final SinkRecord sinkRecord) {
         final String partitionsForTimestamp = super.encodePartition(sinkRecord);
         final String partitionsForFields = this.partitionFieldExtractor.extract(sinkRecord);
