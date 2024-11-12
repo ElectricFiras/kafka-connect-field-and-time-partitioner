@@ -35,9 +35,6 @@ import java.util.Map;
 public final class FieldAndTimeBasedPartitioner<T> extends TimeBasedPartitioner<T> {
 
     public static final String PARTITION_FIELD_FORMAT_PATH_CONFIG = "partition.field.format.path";
-    public static final String PARTITION_FIELD_FORMAT_PATH_DOC = "Whether directory labels should be included when partitioning for custom fields e.g. " +
-            "whether this 'orgId=XXXX/appId=ZZZZ/customField=YYYY' or this 'XXXX/ZZZZ/YYYY'.";
-    public static final String PARTITION_FIELD_FORMAT_PATH_DISPLAY = "Partition Field Format Path";
     public static final boolean PARTITION_FIELD_FORMAT_PATH_DEFAULT = true;
     private static final Logger log = LoggerFactory.getLogger(FieldAndTimeBasedPartitioner.class);
     private PartitionFieldExtractor partitionFieldExtractor;
@@ -53,30 +50,51 @@ public final class FieldAndTimeBasedPartitioner<T> extends TimeBasedPartitioner<
     }
 
     public String encodePartition(final SinkRecord sinkRecord, final long nowInMillis) {
-        final String partitionsForTimestamp = super.encodePartition(sinkRecord, nowInMillis);
-        final String partitionsForFields = this.partitionFieldExtractor.extract(sinkRecord);
-        final String partition = String.join(this.delim, partitionsForFields, partitionsForTimestamp);
+        try {
+            final String partitionsForTimestamp = super.encodePartition(sinkRecord, nowInMillis);
+            final String partitionsForFields = this.partitionFieldExtractor.extract(sinkRecord);
 
-        log.info("Partition Debug 1 : {}", partition);
-
-        return partition;
+            return String.join(this.delim, partitionsForFields, partitionsForTimestamp);
+        } catch (Exception e) {
+            log.error("Error in encodePartition with sinkRecord: {}, nowInMillis: {}", sinkRecord, nowInMillis, e);
+            // Return a default path based on field names
+            return getDefaultPartitionPath();
+        }
     }
 
     @Override
     public String generatePartitionedPath(String topic, String encodedPartition) {
-      // we don't want to use topic name so we ignore it
-      log.info("Partition Debug 2: {}", encodedPartition);
-      return encodedPartition;
+        try {
+            // we don't want to use topic name so we ignore it
+            return encodedPartition;
+        } catch (Exception e) {
+            log.error("Error in generatePartitionedPath with topic: {}, encodedPartition: {}", topic, encodedPartition, e);
+            throw e;
+        }
     }
 
     public String encodePartition(final SinkRecord sinkRecord) {
-        final String partitionsForTimestamp = super.encodePartition(sinkRecord);
-        final String partitionsForFields = this.partitionFieldExtractor.extract(sinkRecord);
-        final String partition = String.join(this.delim, partitionsForFields, partitionsForTimestamp);
+        try {
+            final String partitionsForTimestamp = super.encodePartition(sinkRecord);
+            final String partitionsForFields = this.partitionFieldExtractor.extract(sinkRecord);
 
-        log.info("Partition Debug 3: {}", partition);
+            return String.join(this.delim, partitionsForFields, partitionsForTimestamp);
+        } catch (Exception e) {
+            log.error("Error in encodePartition with sinkRecord: {}", sinkRecord, e);
+            // Return a default path based on field names
+            return getDefaultPartitionPath();
+        }
+    }
 
-        return partition;
+    private String getDefaultPartitionPath() {
+        StringBuilder defaultPath = new StringBuilder();
+        for (String fieldName : this.partitionFieldExtractor.fieldNames) {
+            if (defaultPath.length() != 0) {
+                defaultPath.append(StorageCommonConfig.DIRECTORY_DELIM_DEFAULT);
+            }
+            defaultPath.append(fieldName).append("=Unkown");
+        }
+        return defaultPath.toString();
     }
 
     public static class PartitionFieldExtractor {
@@ -92,37 +110,34 @@ public final class FieldAndTimeBasedPartitioner<T> extends TimeBasedPartitioner<
         }
 
         public String extract(final ConnectRecord<?> record) {
-
             final Object value = record.value();
-
             final StringBuilder builder = new StringBuilder();
 
-            for (final String fieldName : this.fieldNames) {
-
-                if (builder.length() != 0) {
-                    builder.append(StorageCommonConfig.DIRECTORY_DELIM_DEFAULT);
-                }
-
-                if (value instanceof Struct || value instanceof Map) {
-
-                    final String partitionField = (String) DataUtils.getNestedFieldValue(value, fieldName);
-
-                    if (formatPath) {
-                        builder.append(String.join(DELIMITER_EQ, fieldName, partitionField));
-                    } else {
-                        builder.append(partitionField);
+            try {
+                for (final String fieldName : this.fieldNames) {
+                    if (builder.length() != 0) {
+                        builder.append(StorageCommonConfig.DIRECTORY_DELIM_DEFAULT);
                     }
-                    
-                } else {
-                    log.error("Value is not of Struct or Map type.");
-                    throw new PartitionException("Error encoding partition.");
+
+                    if (value instanceof Struct || value instanceof Map) {
+                        final String partitionField = (String) DataUtils.getNestedFieldValue(value, fieldName);
+
+                        if (formatPath) {
+                            builder.append(String.join(DELIMITER_EQ, fieldName, partitionField));
+                        } else {
+                            builder.append(partitionField);
+                        }
+                    } else {
+                        log.error("Value is not of Struct or Map type.");
+                        throw new PartitionException("Error encoding partition.");
+                    }
                 }
 
+                return builder.toString();
+            } catch (Exception e) {
+                log.error("Error in extract method with record: {}", record, e);
+                throw e;
             }
-
-            log.info("Partition Debug 4: {}", builder.toString());
-            return builder.toString();
-
         }
     }
 
